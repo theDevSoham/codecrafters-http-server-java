@@ -48,12 +48,14 @@ public class Main {
 
         if (urlPath.equals("/")) {
             // Get output stream of client socket
-            PrintWriter out = getPrintWriter(false, clientSocket, responseBody);
-            return out;
-        } else {
+            return getPrintWriter(false, clientSocket, responseBody);
+        }
+        else if (urlPath.startsWith("/echo/")) {
+            return getPrintWriter(false, clientSocket, urlPath.substring(6));
+        }
+        else {
             // Get output stream of client socket
-            PrintWriter out = getPrintWriter(true, clientSocket, errorBody);
-            return out;
+            return getPrintWriter(true, clientSocket, errorBody);
         }
     }
 
