@@ -1,6 +1,4 @@
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -20,21 +18,7 @@ public class Main {
        clientSocket = serverSocket.accept(); // Wait for connection from client.
        System.out.println("accepted new connection");
 
-       String responseBody = "Hello, world!";
-
-       // Get output stream of client socket
-         OutputStream outputStream = clientSocket.getOutputStream();
-         PrintWriter out = new PrintWriter(outputStream, true);
-
-         // Send http response to client
-         out.print("HTTP/1.1 200 OK\r\n");
-         out.print("Content-Type: text/plain\r\n");
-         out.print("Content-Length: " + responseBody.length() + "\r\n");
-         out.print("\r\n");
-         out.print(responseBody);
-
-         // Ensure all data is sent by flushing the stream
-         out.flush();
+         PrintWriter out = getResponse(clientSocket);
 
          // Close streams and sockets
          out.close();
@@ -45,4 +29,56 @@ public class Main {
        System.out.println("IOException: " + e.getMessage());
      }
   }
+
+    private static PrintWriter getResponse(Socket clientSocket) throws IOException {
+        String responseBody = "Hello, world!";
+        String errorBody = "Something went wrong!";
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        String requestLine = in.readLine();
+
+        // Parse the request line to extract the URL path
+        String urlPath = "";
+        if (requestLine != null && !requestLine.isEmpty()) {
+            String[] requestParts = requestLine.split(" ");
+            if (requestParts.length > 1) {
+                urlPath = requestParts[1];
+            }
+        }
+
+        if (urlPath.equals("/")) {
+            // Get output stream of client socket
+            PrintWriter out = getPrintWriter(false, clientSocket, responseBody);
+            return out;
+        } else {
+            // Get output stream of client socket
+            PrintWriter out = getPrintWriter(true, clientSocket, errorBody);
+            return out;
+        }
+    }
+
+    private static PrintWriter getPrintWriter(Boolean failed, Socket clientSocket, String responseBody) throws IOException {
+        OutputStream outputStream = clientSocket.getOutputStream();
+        PrintWriter out = new PrintWriter(outputStream, true);
+
+        if (failed) {
+            // Send http response to client
+            out.print("HTTP/1.1 404 Not Found\r\n");
+            out.print("Content-Type: text/plain\r\n");
+            out.print("Content-Length: " + responseBody.length() + "\r\n");
+            out.print("\r\n");
+            out.print(responseBody);
+        } else {
+            // Send http response to client
+            out.print("HTTP/1.1 200 OK\r\n");
+            out.print("Content-Type: text/plain\r\n");
+            out.print("Content-Length: " + responseBody.length() + "\r\n");
+            out.print("\r\n");
+            out.print(responseBody);
+        }
+
+        // Ensure all data is sent by flushing the stream
+        out.flush();
+        return out;
+    }
 }
