@@ -39,7 +39,7 @@ public class Main {
         BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         Map<String, String> headers = new HashMap<String, String>();
         String requestLine = in.readLine();
-        String headerLine
+        String headerLine;
 
         // Parse request line to extract header
         while((headerLine = in.readLine()) != null && !headerLine.isEmpty()) {
