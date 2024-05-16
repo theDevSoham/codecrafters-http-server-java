@@ -45,7 +45,7 @@ public class Main {
         while((headerLine = in.readLine()) != null && !headerLine.isEmpty()) {
             String[] headerParts = headerLine.split(":", 2);
             if (headerParts.length == 2) {
-                headers.put(headerParts[0], headerParts[1]);
+                headers.put(headerParts[0], headerParts[1].trim());
             }
         }
 
