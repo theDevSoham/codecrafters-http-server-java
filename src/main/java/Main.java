@@ -1,6 +1,8 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main {
   public static void main(String[] args) {
@@ -35,7 +37,17 @@ public class Main {
         String errorBody = "Something went wrong!";
 
         BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        Map<String, String> headers = new HashMap<String, String>();
         String requestLine = in.readLine();
+        String headerLine = in.readLine();
+
+        // Parse request line to extract header
+        while(headerLine != null && !headerLine.isEmpty()) {
+            String[] headerParts = headerLine.split(":", 2);
+            if (headerParts.length == 2) {
+                headers.put(headerParts[0], headerParts[1]);
+            }
+        }
 
         // Parse the request line to extract the URL path
         String urlPath = "";
@@ -52,6 +64,9 @@ public class Main {
         }
         else if (urlPath.startsWith("/echo/")) {
             return getPrintWriter(false, clientSocket, urlPath.substring(6));
+        }
+        else if (urlPath.equals("/user-agent")) {
+            return getPrintWriter(false, clientSocket, headers.get("User-Agent"));
         }
         else {
             // Get output stream of client socket
