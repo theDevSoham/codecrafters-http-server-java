@@ -1,6 +1,7 @@
 import java.io.*;
 import java.lang.reflect.Method;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -85,8 +86,6 @@ public class ClientHandler implements Runnable {
                 String filePathString = urlPath.substring(7);
                 Path filePath = this.directory.resolve(filePathString).toAbsolutePath().normalize();
 
-                System.out.println("File path: " + filePath);
-
                 // Ensure the file is within the base directory
                 if (!filePath.startsWith(this.directory)) {
                     errorBody = "Error: Access denied";
@@ -95,14 +94,14 @@ public class ClientHandler implements Runnable {
                 }
 
                 // Read the request body
-                StringBuilder requestBody = new StringBuilder();
-                String bodyLine;
-                while ((bodyLine = in.readLine()) != null && !bodyLine.isEmpty()) {
-                    requestBody.append(bodyLine).append("\n");
+                StringBuilder payload = new StringBuilder();
+                while (in.ready()) {
+                    payload.append((char)in.read());
                 }
+                String content = payload.toString();
 
                 // Write the contents to the file
-                Files.write(filePath, requestBody.toString().getBytes());
+                Files.writeString(filePath, content);
 
                 // Respond with 201 Created
                 String successBody = "File created: " + filePath.getFileName().toString();
