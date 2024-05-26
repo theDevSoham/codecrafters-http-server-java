@@ -12,9 +12,11 @@ enum ResponseType {
 
 public class ClientHandler implements Runnable {
     private final Socket clientSocket;
+    private final Path directory;
 
-    public ClientHandler(Socket socket) {
+    public ClientHandler(Socket socket, Path baseDirectory) {
         this.clientSocket = socket;
+        this.directory = baseDirectory;
     }
 
     @Override
@@ -64,7 +66,8 @@ public class ClientHandler implements Runnable {
                 sendResponse(ResponseType.SUCCESS, clientSocket, headers.getOrDefault("User-Agent", "Unknown User-Agent").getBytes(), "text/plain");
                 break;
             case String p when p.startsWith("/files/"):
-                Path filePath = Paths.get(urlPath.substring(7)).toAbsolutePath().normalize();
+                String filePathString = urlPath.substring(7);
+                Path filePath = this.directory.resolve(filePathString).toAbsolutePath().normalize();
                 if (Files.exists(filePath)) {
                     byte[] fileResponseBody = Files.readAllBytes(filePath);
                     sendResponse(ResponseType.FILE, clientSocket, fileResponseBody, "application/octet-stream");
