@@ -64,7 +64,7 @@ public class ClientHandler implements Runnable {
                 sendResponse(ResponseType.SUCCESS, clientSocket, headers.getOrDefault("User-Agent", "Unknown User-Agent").getBytes(), "text/plain");
                 break;
             case String p when p.startsWith("/files/"):
-                Path filePath = Paths.get(urlPath.substring(7));
+                Path filePath = Paths.get(urlPath.substring(7)).toAbsolutePath().normalize();
                 if (Files.exists(filePath)) {
                     byte[] fileResponseBody = Files.readAllBytes(filePath);
                     sendResponse(ResponseType.FILE, clientSocket, fileResponseBody, "application/octet-stream");
