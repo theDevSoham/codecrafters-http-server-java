@@ -65,7 +65,6 @@ public class ClientHandler implements Runnable {
             String[] requestParts = requestLine.split(" ");
             if (requestParts.length > 1) {
                 method = Methods.get(requestParts[0]);
-                System.out.println("Request method: " + method + " " + requestParts[0]);
                 urlPath = requestParts[1];
             }
         }
@@ -85,6 +84,8 @@ public class ClientHandler implements Runnable {
             case String p when p.startsWith("/files/"):
                 String filePathString = urlPath.substring(7);
                 Path filePath = this.directory.resolve(filePathString).toAbsolutePath().normalize();
+
+                System.out.println("File path: " + filePath);
 
                 // Ensure the file is within the base directory
                 if (!filePath.startsWith(this.directory)) {
