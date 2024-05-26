@@ -65,6 +65,7 @@ public class ClientHandler implements Runnable {
             String[] requestParts = requestLine.split(" ");
             if (requestParts.length > 1) {
                 method = Methods.get(requestParts[0]);
+                System.out.println("Request method: " + method + " " + requestParts[0]);
                 urlPath = requestParts[1];
             }
         }
