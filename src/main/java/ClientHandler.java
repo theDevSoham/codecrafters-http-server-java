@@ -1,18 +1,30 @@
 import java.io.*;
+import java.lang.reflect.Method;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
 enum ResponseType {
-    SUCCESS, FAILURE, FILE
+    SUCCESS, FAILURE, FILE, CREATED
+}
+
+enum MethodTypes {
+    GET, POST, PUT, DELETE
 }
 
 public class ClientHandler implements Runnable {
     private final Socket clientSocket;
     private final Path directory;
+    private final Map<String, MethodTypes> Methods = new HashMap<>() {{
+        put("GET", MethodTypes.GET);
+        put("POST", MethodTypes.POST);
+        put("PUT", MethodTypes.PUT);
+        put("DELETE", MethodTypes.DELETE);
+    }};
 
     public ClientHandler(Socket socket, Path baseDirectory) {
         this.clientSocket = socket;
@@ -48,13 +60,59 @@ public class ClientHandler implements Runnable {
 
         // Parse the request line to extract the URL path
         String urlPath = "";
+        MethodTypes method = MethodTypes.GET;
         if (requestLine != null && !requestLine.isEmpty()) {
             String[] requestParts = requestLine.split(" ");
             if (requestParts.length > 1) {
+                method = Methods.get(requestParts[0]);
                 urlPath = requestParts[1];
             }
         }
 
+        switch (method) {
+            case POST:
+                handlePostRequest(clientSocket, urlPath, responseBody, headers, errorBody, in);
+                break;
+
+            default:
+                handleGetRequest(clientSocket, urlPath, responseBody, headers, errorBody);
+        }
+    }
+
+    private void handlePostRequest(Socket clientSocket, String urlPath, String responseBody, Map<String, String> headers, String errorBody, BufferedReader in) throws IOException {
+        switch (urlPath) {
+            case String p when p.startsWith("/files/"):
+                String filePathString = urlPath.substring(7);
+                Path filePath = this.directory.resolve(filePathString).toAbsolutePath().normalize();
+
+                // Ensure the file is within the base directory
+                if (!filePath.startsWith(this.directory)) {
+                    errorBody = "Error: Access denied";
+                    sendResponse(ResponseType.FAILURE, clientSocket, errorBody.getBytes(), "text/plain");
+                    return;
+                }
+
+                // Read the request body
+                StringBuilder requestBody = new StringBuilder();
+                String bodyLine;
+                while ((bodyLine = in.readLine()) != null && !bodyLine.isEmpty()) {
+                    requestBody.append(bodyLine).append("\n");
+                }
+
+                // Write the contents to the file
+                Files.write(filePath, requestBody.toString().getBytes());
+
+                // Respond with 201 Created
+                String successBody = "File created: " + filePath.getFileName().toString();
+                sendResponse(ResponseType.CREATED, clientSocket, successBody.getBytes(), "text/plain");
+
+            default:
+                sendResponse(ResponseType.FAILURE, clientSocket, errorBody.getBytes(), "text/plain");
+                break;
+        }
+    }
+
+    private void handleGetRequest(Socket clientSocket, String urlPath, String responseBody, Map<String, String> headers, String errorBody) throws IOException {
         switch (urlPath) {
             case "/":
                 sendResponse(ResponseType.SUCCESS, clientSocket, responseBody.getBytes(), "text/plain");
@@ -96,6 +154,10 @@ public class ClientHandler implements Runnable {
             case FILE:
                 out.print("HTTP/1.1 200 OK\r\n");
                 contentType = "application/octet-stream";
+                break;
+
+            case CREATED:
+                out.print("HTTP/1.1 201 Created\r\n");
                 break;
         }
 
