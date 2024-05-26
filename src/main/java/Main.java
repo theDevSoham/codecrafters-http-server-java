@@ -23,7 +23,7 @@ public class Main {
          while (true) {
              Socket clientSocket = serverSocket.accept(); // Wait for connection from client.
              System.out.println("Accepted new connection");
-             if (args[0].equals("--directory")) {
+             if (args.length > 0 && args[0].equals("--directory")) {
                  baseDirectory = Paths.get(args[1]).toAbsolutePath().normalize();
              }
 
