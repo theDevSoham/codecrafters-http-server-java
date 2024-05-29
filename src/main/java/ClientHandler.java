@@ -175,6 +175,7 @@ public class ClientHandler implements Runnable {
         }
 
         out.print("\r\n");
+        System.out.println("Response: " + out);
         out.flush();
 
         outputStream.flush();
