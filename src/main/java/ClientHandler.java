@@ -163,8 +163,8 @@ public class ClientHandler implements Runnable {
         out.print("Content-Type: " + contentType + "\r\n");
         out.print("Content-Length: " + responseBody.length + "\r\n");
 
-        if (isEncoded.equals("gzip")) {
-            out.print("Content-Encoding: " + isEncoded + "\r\n");
+        if (isEncoded.contains("gzip")) {
+            out.print("Content-Encoding: gzip" + "\r\n");
         }
 
         out.print("\r\n");
