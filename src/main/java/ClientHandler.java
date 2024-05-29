@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.zip.GZIPOutputStream;
 
 enum ResponseType {
     SUCCESS, FAILURE, FILE, CREATED
@@ -161,16 +162,29 @@ public class ClientHandler implements Runnable {
         }
 
         out.print("Content-Type: " + contentType + "\r\n");
-        out.print("Content-Length: " + responseBody.length + "\r\n");
 
         if (isEncoded.contains("gzip")) {
+            byte[] modifiedResponse = gzipEncode(responseBody);
+
             out.print("Content-Encoding: gzip" + "\r\n");
+            outputStream.write(modifiedResponse);
+            out.print("Content-Length: " + modifiedResponse.length + "\r\n");
+        } else {
+            outputStream.write(responseBody);
+            out.print("Content-Length: " + responseBody.length + "\r\n");
         }
 
         out.print("\r\n");
         out.flush();
 
-        outputStream.write(responseBody);
         outputStream.flush();
+    }
+
+    private byte[] gzipEncode(byte[] data) throws IOException {
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(data.length);
+        try (GZIPOutputStream gzipStream = new GZIPOutputStream(byteStream)) {
+            gzipStream.write(data);
+        }
+        return byteStream.toByteArray();
     }
 }
