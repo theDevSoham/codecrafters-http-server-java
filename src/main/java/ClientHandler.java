@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 enum ResponseType {
     SUCCESS, FAILURE, FILE, CREATED
@@ -22,6 +23,7 @@ public class ClientHandler implements Runnable {
         put("PUT", MethodTypes.PUT);
         put("DELETE", MethodTypes.DELETE);
     }};
+    private final Map<String, String> headers = new HashMap<>();
 
     public ClientHandler(Socket socket, Path baseDirectory) {
         this.clientSocket = socket;
@@ -43,7 +45,6 @@ public class ClientHandler implements Runnable {
         String errorBody = "Something went wrong!";
 
         BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        Map<String, String> headers = new HashMap<>();
         String requestLine = in.readLine();
         String headerLine;
 
@@ -68,15 +69,15 @@ public class ClientHandler implements Runnable {
 
         switch (method) {
             case POST:
-                handlePostRequest(clientSocket, urlPath, responseBody, headers, errorBody, in);
+                handlePostRequest(clientSocket, urlPath, responseBody, errorBody, in);
                 break;
 
             default:
-                handleGetRequest(clientSocket, urlPath, responseBody, headers, errorBody);
+                handleGetRequest(clientSocket, urlPath, responseBody, errorBody);
         }
     }
 
-    private void handlePostRequest(Socket clientSocket, String urlPath, String responseBody, Map<String, String> headers, String errorBody, BufferedReader in) throws IOException {
+    private void handlePostRequest(Socket clientSocket, String urlPath, String responseBody, String errorBody, BufferedReader in) throws IOException {
         switch (urlPath) {
             case String p when p.startsWith("/files/"):
                 String filePathString = urlPath.substring(7);
@@ -92,7 +93,7 @@ public class ClientHandler implements Runnable {
                 // Read the request body
                 StringBuilder payload = new StringBuilder();
                 while (in.ready()) {
-                    payload.append((char)in.read());
+                    payload.append((char) in.read());
                 }
                 String content = payload.toString();
 
@@ -109,7 +110,7 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void handleGetRequest(Socket clientSocket, String urlPath, String responseBody, Map<String, String> headers, String errorBody) throws IOException {
+    private void handleGetRequest(Socket clientSocket, String urlPath, String responseBody, String errorBody) throws IOException {
         switch (urlPath) {
             case "/":
                 sendResponse(ResponseType.SUCCESS, clientSocket, responseBody.getBytes(), "text/plain");
@@ -140,6 +141,7 @@ public class ClientHandler implements Runnable {
     private void sendResponse(ResponseType responseType, Socket clientSocket, byte[] responseBody, String contentType) throws IOException {
         OutputStream outputStream = clientSocket.getOutputStream();
         PrintWriter out = new PrintWriter(outputStream, true);
+        String isEncoded = headers.getOrDefault("Accept-Encoding", "none");
 
         switch (responseType) {
             case SUCCESS:
@@ -160,6 +162,11 @@ public class ClientHandler implements Runnable {
 
         out.print("Content-Type: " + contentType + "\r\n");
         out.print("Content-Length: " + responseBody.length + "\r\n");
+
+        if (!isEncoded.equals("none")) {
+            out.print("Content-Encoding: " + isEncoded + "\r\n");
+        }
+
         out.print("\r\n");
         out.flush();
 
