@@ -181,7 +181,7 @@ public class ClientHandler implements Runnable {
     }
 
     private byte[] gzipEncode(byte[] data) throws IOException {
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(data.length);
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         try (GZIPOutputStream gzipStream = new GZIPOutputStream(byteStream)) {
             gzipStream.write(data);
         }
