@@ -143,6 +143,8 @@ public class ClientHandler implements Runnable {
         OutputStream outputStream = clientSocket.getOutputStream();
         PrintWriter out = new PrintWriter(outputStream, true);
         String isEncoded = headers.getOrDefault("Accept-Encoding", "none");
+        boolean gzipped = isEncoded.contains("gzip");
+        byte[] gzipResponse = gzipEncode(responseBody);
 
         switch (responseType) {
             case SUCCESS:
@@ -162,22 +164,14 @@ public class ClientHandler implements Runnable {
         }
 
         out.print("Content-Type: " + contentType + "\r\n");
-
-        if (isEncoded.contains("gzip")) {
-            byte[] modifiedResponse = gzipEncode(responseBody);
-
-            out.print("Content-Encoding: gzip" + "\r\n");
-            outputStream.write(modifiedResponse);
-            out.print("Content-Length: " + modifiedResponse.length + "\r\n");
-        } else {
-            outputStream.write(responseBody);
-            out.print("Content-Length: " + responseBody.length + "\r\n");
+        out.print("Content-Length: " + (gzipped ? gzipResponse.length : responseBody.length) + "\r\n");
+        if (gzipped) {
+            out.print("Content-Encoding: gzip\r\n");
         }
-
         out.print("\r\n");
-        System.out.println("Response: " + out);
         out.flush();
 
+        outputStream.write(gzipped ? gzipResponse : responseBody);
         outputStream.flush();
     }
 
